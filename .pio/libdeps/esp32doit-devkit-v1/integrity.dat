@@ -1,0 +1,4 @@
+Arduino
+Wire
+dfrobot/DFRobot_GP8XXX@^1.0.1
+emelianov/modbus-esp8266@^4.1.0
