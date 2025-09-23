@@ -4,13 +4,11 @@
 #include "modbus_handler.h"
 #include "sine_wave_generator.h"
 #include "device_id.h"
-#include "rs485_command_handler.h"
 #include "utils.h"
 
 // Global variable declarations
 extern char signalModes[3]; // Signal modes
 extern float signalValues[3]; // Signal values
-extern bool signalConfigured[3]; // Signal configuration status
 
 // Global signal mapping table
 SignalMap signalMap[3] = {
@@ -126,10 +124,6 @@ void processCommand(String command) {
             processModbusCommand(command);
         } else if (lowerCommand.startsWith("sine")) {
             processSystemCommand(command);
-        } else if (lowerCommand.startsWith("ping") || lowerCommand.startsWith("test485") || 
-                   lowerCommand.startsWith("voltage") || lowerCommand.startsWith("current") || 
-                   lowerCommand.startsWith("stop")) {
-            processRS485Command(command);
         } else if (command.length() > 0) {
             Serial.println("Unknown command. Type 'help' for available commands.");
         }
@@ -153,9 +147,8 @@ void processAnalogCommand(String command) {
             
             if (channel >= 1 && channel <= 3) {
                 if (mode == 'v' || mode == 'c') {
-                    // Update signal mode and mark as configured
+                    // Update signal mode
                     signalModes[channel - 1] = mode;
-                    signalConfigured[channel - 1] = true;
                     
                     // Set channel mode first
                     setRelayMode(channel, mode);
@@ -300,50 +293,6 @@ void processSystemCommand(String command) {
     }
 }
 
-/**
- * Process RS485-related commands
- */
-void processRS485Command(String command) {
-    String lowerCommand = command;
-    lowerCommand.toLowerCase();
-    
-    if (lowerCommand.startsWith("ping")) {
-        // Send ping command via RS-485 (temporarily disabled)
-        Serial.println("RS-485 functionality temporarily disabled, waiting for definition");
-    }
-    else if (lowerCommand.startsWith("test485")) {
-        // Test RS-485 connection (temporarily disabled)
-        Serial.println("RS-485 functionality temporarily disabled, waiting for definition");
-    }
-    else if (lowerCommand.startsWith("voltage")) {
-        // Set voltage via RS-485: voltage <value>
-        // Example: voltage 5.0
-        float voltage = command.substring(8).toFloat();
-        if (voltage >= 0 && voltage <= 10) {
-            uint16_t voltageRaw = (uint16_t)(voltage * 100);
-            uint8_t data[2] = {(uint8_t)(voltageRaw >> 8), (uint8_t)(voltageRaw & 0xFF)};
-            sendTestRS485Command(CMD_SET_VOLTAGE, data, 2);
-        } else {
-            Serial.println("Invalid voltage value (0-10V)");
-        }
-    }
-    else if (lowerCommand.startsWith("current")) {
-        // Set current via RS-485: current <value>
-        // Example: current 10.5
-        float current = command.substring(8).toFloat();
-        if (current >= 0 && current <= 25) {
-            uint16_t currentRaw = (uint16_t)(current * 100);
-            uint8_t data[2] = {(uint8_t)(currentRaw >> 8), (uint8_t)(currentRaw & 0xFF)};
-            sendTestRS485Command(CMD_SET_CURRENT, data, 2);
-        } else {
-            Serial.println("Invalid current value (0-25mA)");
-        }
-    }
-    else if (lowerCommand.startsWith("stop")) {
-        // Stop sine wave via RS-485
-        sendTestRS485Command(CMD_STOP_SINE, nullptr, 0);
-    }
-}
 
 /**
  * Process test commands (modbus_test, serial_test, etc.)
@@ -526,7 +475,7 @@ void printStatusReport() {
     Serial.println("\n=== Status Report ===");
     
     // Device information
-    Serial.printf("Device ID: %d\n", getCurrentDeviceID());
+    Serial.printf("Device ID: %d\n", calculateDeviceID());
     
     // System mode status
     if (isModbusModeActive()) {
@@ -610,8 +559,6 @@ void printHelp() {
     }
     
     Serial.println("System Commands:");
-    Serial.println("ping                    - Send ping command via RS-485 (disabled)");
-    Serial.println("test485                 - Test RS-485 connection (disabled)");
     Serial.println("status                  - Show local system status");
     Serial.println("modbus_test             - Test Modbus connection and show configuration");
     Serial.println("serial_test             - Test Serial2 loopback (connect GPIO 16 to 17)");
@@ -620,89 +567,6 @@ void printHelp() {
     Serial.println("========================================\n");
 }
 
-/**
- * Example of how to send a command via RS-485 from USB Serial
- * This function can be called from USB Serial commands for testing
- */
-void sendTestRS485Command(uint8_t commandType, const uint8_t* data, uint8_t length) {
-    // Create command buffer
-    uint8_t buffer[RS485_MAX_COMMAND_LENGTH];
-    uint8_t bufferIndex = 0;
-    
-    // Add start byte
-    buffer[bufferIndex++] = 0xAA;
-    
-    // Add device ID (broadcast to all devices)
-    buffer[bufferIndex++] = 0xFF;
-    
-    // Add command type
-    buffer[bufferIndex++] = commandType;
-    
-    // Add data
-    if (length > 0 && data != nullptr) {
-        memcpy(&buffer[bufferIndex], data, length);
-        bufferIndex += length;
-    }
-    
-    // Add end byte
-    buffer[bufferIndex++] = 0x55;
-    
-    // Send via RS-485
-    sendRS485Response(0xFF, commandType, data, length);
-    
-    Serial.printf("Test command sent: Type=0x%02X, Length=%d\n", commandType, length);
-}
-
-/**
- * Test RS-485 connection
- */
-void testRS485Connection() {
-    Serial.println("\n=== RS-485 Connection Test ===");
-    
-    // Test 1: Send ping command
-    Serial.println("Test 1: Sending ping command...");
-    sendTestRS485Command(CMD_PING, nullptr, 0);
-    delay(100);
-    
-    // Test 2: Send voltage command
-    Serial.println("Test 2: Sending voltage command (5.0V)...");
-    uint16_t voltageRaw = (uint16_t)(5.0 * 100);
-    uint8_t data[2] = {(uint8_t)(voltageRaw >> 8), (uint8_t)(voltageRaw & 0xFF)};
-    sendTestRS485Command(CMD_SET_VOLTAGE, data, 2);
-    delay(100);
-    
-    // Test 3: Send current command
-    Serial.println("Test 3: Sending current command (10.0mA)...");
-    uint16_t currentRaw = (uint16_t)(10.0 * 100);
-    uint8_t currentData[2] = {(uint8_t)(currentRaw >> 8), (uint8_t)(currentRaw & 0xFF)};
-    sendTestRS485Command(CMD_SET_CURRENT, currentData, 2);
-    delay(100);
-    
-    // Test 4: Check for incoming data
-    Serial.println("Test 4: Checking for incoming RS-485 data...");
-    Serial.println("Listening for 2 seconds...");
-    
-    unsigned long startTime = millis();
-    int bytesReceived = 0;
-    
-    while (millis() - startTime < 2000) {
-        if (processRS485Commands()) {
-            bytesReceived++;
-            Serial.printf("Received command #%d\n", bytesReceived);
-        }
-        delay(10);
-    }
-    
-    if (bytesReceived == 0) {
-        Serial.println("No RS-485 data received during test period");
-        Serial.println("Check wiring: TX=GPIO19, RX=GPIO18");
-        Serial.println("Baud rate: 19200, Parity: 8E1");
-    } else {
-        Serial.printf("Successfully received %d commands\n", bytesReceived);
-    }
-    
-    Serial.println("=== RS-485 Test Complete ===\n");
-}
 
 /**
  * Handle USB Serial commands for testing

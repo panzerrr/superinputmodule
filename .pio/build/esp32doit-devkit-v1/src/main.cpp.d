@@ -135,9 +135,6 @@
  /Users/Apple/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /Users/Apple/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
  /Users/Apple/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
- include/rs485_serial.h \
- /Users/Apple/.platformio/packages/framework-arduinoespressif32/cores/esp32/HardwareSerial.h \
- include/rs485_command_handler.h include/rs485_serial.h \
  include/dac_controller.h \
  .pio/libdeps/esp32doit-devkit-v1/DFRobot_GP8XXX/DFRobot_GP8XXX.h \
  include/relay_controller.h include/sine_wave_generator.h \

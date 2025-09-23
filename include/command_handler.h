@@ -31,13 +31,9 @@ void processAnalogCommand(String command);
 void processModbusCommand(String command);
 void processSystemCommand(String command);
 void processTestCommand(String command);
-void processRS485Command(String command);
-
 // Helper functions that were in main.cpp
 void printStatusReport();
 void printHelp();
-void sendTestRS485Command(uint8_t commandType, const uint8_t* data, uint8_t length);
-void testRS485Connection();
 
 // Main USB serial command handler (called from main.cpp loop)
 void handleUSBSerialCommands();

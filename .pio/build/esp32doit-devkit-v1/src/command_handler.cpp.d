@@ -143,7 +143,5 @@
  .pio/libdeps/esp32doit-devkit-v1/modbus-esp8266/src/ModbusAPI.h \
  .pio/libdeps/esp32doit-devkit-v1/modbus-esp8266/src/Modbus.h \
  .pio/libdeps/esp32doit-devkit-v1/modbus-esp8266/src/ModbusSettings.h \
- include/sine_wave_generator.h include/device_id.h \
- include/rs485_command_handler.h include/rs485_serial.h \
- /Users/Apple/.platformio/packages/framework-arduinoespressif32/cores/esp32/HardwareSerial.h \
- include/utils.h include/dac_controller.h
+ include/sine_wave_generator.h include/device_id.h include/utils.h \
+ include/dac_controller.h

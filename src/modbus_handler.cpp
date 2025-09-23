@@ -52,11 +52,9 @@ void enterModbusMode(uint8_t slaveID) {
         // Clear the signal arrays in main.cpp to reset all analog inputs
         extern char signalModes[3];
         extern float signalValues[3];
-        extern bool signalConfigured[3];
         for (int i = 0; i < 3; i++) {
             signalModes[i] = 'v';  // Reset to default voltage mode
             signalValues[i] = 0.0f; // Reset to 0
-            signalConfigured[i] = false; // Mark as not configured
         }
         
         // Turn off all analog outputs and isolate with relays
